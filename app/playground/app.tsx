@@ -20,7 +20,6 @@ import { FaRegCircle, FaRegSquareFull } from "react-icons/fa6";
 import { Button } from "@/components/ui/button";
 import TiptapEditor from "@/components/TextEditor/TextEditor";
 import { Avatars } from "@/components/Avatars/Avatars";
-import Apps from "@/components/Apps/Apps";
 import { apps } from "../constants";
 import { CiTextAlignLeft } from "react-icons/ci";
 import { BsCursorFill } from "react-icons/bs";

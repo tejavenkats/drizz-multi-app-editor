@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect } from "react";
 import {
   LiveblocksProvider,
   RoomProvider,
@@ -9,23 +9,15 @@ import {
 import {
   LiveList,
   LiveMap,
-  ResolveMentionSuggestionsArgs,
-  ResolveUsersArgs,
 } from "@liveblocks/client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useStorage } from "@liveblocks/react";
 import { filter, get } from "lodash";
 import { apps } from "./constants";
 import { Shape } from "@/liveblocks.config";
 
-function useExampleRoomId(roomId: string) {
-  const params = useSearchParams();
-  const exampleId = params?.get("exampleId");
-  return exampleId ? `${roomId}-${exampleId}` : roomId;
-}
 
 export function Room({ children }: { children: ReactNode }) {
-  const roomId = useExampleRoomId("liveblocks:drizz-canvas-editor:my-room");
+  const roomId = "liveblocks:drizz-canvas-editor:my-room"
 
   const router = useRouter();
 
