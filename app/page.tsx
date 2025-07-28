@@ -124,7 +124,7 @@ export default function Join() {
         <Select
           value={selectedRoom}
           onValueChange={(value) => {
-            setSelectedApps([]);
+            setSelectedApps(apps);
             setSelectedRoom(value);
           }}
         >
