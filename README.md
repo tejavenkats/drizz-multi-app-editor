@@ -1,6 +1,12 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+
 ## Getting Started
+
+**Prerequisites:**
+- Python FastAPI server (`drizz-emulator-api`): clone and run locally from https://github.com/tejavenkats/drizz-emulator-api (see its README for setup).
+- Android Studio & SDK: install Android Studio, configure at least one Android Virtual Device (AVD), and ensure `emulator` and `adb` are in your PATH.
+
 
 First, run the development server:
 
@@ -34,5 +40,5 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# drizz-emulator-api
-# drizz-emulator-api
+
+
