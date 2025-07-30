@@ -23,6 +23,7 @@ import { filter, forEach, isEmpty, map } from "lodash";
 import { PointerEvent, useMemo, useState } from "react";
 import { PiSpinnerGapBold } from "react-icons/pi";
 import VideoFeed from "../VideoFeed/VideoFeed";
+import EmulatorFeed from "../LiveFeed/LiveFeed";
 
 interface TiptapEditorProps {
   onShapePointerDown: (
@@ -108,11 +109,52 @@ export default function TiptapEditor({
     return mentions;
   }, [editor?.getJSON()]);
 
+  
+  const [activeAppId, setActiveAppId] = useState<string | null>(null);
+  const [emulatorSerial, setEmulatorSerial] = useState<string | null>(null);
+  const [feedUrls, setFeedUrls] = useState<Record<string, string>>({});
+
+  async function runEmulator(appId: string) {
+    const appConfig = apps.find((a) => a.id === appId);
+    if (!appConfig) return;
+    // Start emulator and get feed URL
+    const startResp = await fetch("http://localhost:8000/start_emulator", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Medium_Phone_API_36.0",
+        port: appConfig.info.port,
+      }),
+    });
+    const { serial, feed_url } = await startResp.json();
+    setEmulatorSerial(serial);
+    setFeedUrls((prev) => ({ ...prev, [appId]: feed_url }));
+    // manual delay before opening the app
+    await delay(5000);
+    // open Chrome or Dialer separately
+    if (appConfig.info.endpoint === "/open_chrome") {
+      await fetch("http://localhost:8000/open_chrome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serial }),
+      });
+    }
+    if (appConfig.info.endpoint === "/open_dialer") {
+      await fetch("http://localhost:8000/open_dialer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serial }),
+      });
+    }
+    setActiveAppId(appId);
+  }
+
   const runEditorContent = async () => {
     setIsRunning(true);
 
     for (let i = 0; i < mentionedAppIds.length; i++) {
       const mention = mentionedAppIds[i];
+      await runEmulator(mention);
       await updateRunningEditorCoordinates(
         shapeData?.x || 0,
         shapeData?.y || 0
@@ -177,7 +219,8 @@ export default function TiptapEditor({
           <EditorContent editor={editor} />
         </div>
       </div>
-      <VideoFeed mentionedAppIds={mentionedAppIds} />
+      <VideoFeed mentionedAppIds={mentionedAppIds} feedUrls={feedUrls} />
+      {/* <EmulatorFeed mentionedAppIds={mentionedAppIds} /> */}
     </div>
   );
 }

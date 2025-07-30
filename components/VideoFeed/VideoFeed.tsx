@@ -6,10 +6,35 @@ import { FC, useEffect, useRef, useState } from "react";
 import { GoGrabber } from "react-icons/go";
 
 interface VideoFeedProps {
-    mentionedAppIds: string[];
+  mentionedAppIds: string[];
+  feedUrls: Record<string, string>;
 }
 
-const VideoFeed: FC<VideoFeedProps> = ({ mentionedAppIds }) => {
+const VideoFeed: FC<VideoFeedProps> = ({ mentionedAppIds, feedUrls }) => {
+  // a key to force new <img> connections when feeds update
+  const [streamKey, setStreamKey] = useState(0);
+  const [loadedFeeds, setLoadedFeeds] = useState<string[]>([]);
+
+  useEffect(() => {
+    // bump key whenever feed URLs or mentioned apps change
+    setStreamKey((prev) => prev + 1);
+  }, [JSON.stringify(feedUrls), JSON.stringify(mentionedAppIds)]);
+
+  useEffect(() => {
+    if (mentionedAppIds.every(id => loadedFeeds.includes(id))) {
+      // all feeds loaded; you can now safely call your open endpoints
+      mentionedAppIds.forEach(id => {
+        const serial = `emulator-${apps.find(a => a.id === id)?.info.port}`;
+        // example: call open_chrome for each serial
+        fetch('http://localhost:8000/open_chrome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serial }),
+        });
+      });
+    }
+  }, [loadedFeeds]);
+
   const selectedAppId = useStorage((state) => state.selectedAppId);
   const runningEditorCoordinates = useStorage(
     (state) => state.runningEditorCoordinates
@@ -78,7 +103,20 @@ const VideoFeed: FC<VideoFeedProps> = ({ mentionedAppIds }) => {
     });
   }, [selectedAppId]);
 
-  const filteredApps = filter(apps, (app) => mentionedAppIds.includes(app.id));
+  // Build feed list using feedUrls or fallback to port-based URL, append streamKey to bust previous MJPEG connections
+  const feeds = mentionedAppIds.map(id => {
+    const appConfig = apps.find(app => app.id === id);
+    const baseUrl =
+      feedUrls[id] ||
+      `http://localhost:8000/video_feed/emulator-${appConfig?.info.port}`;
+    // append streamKey to bust previous MJPEG connections
+    const separator = baseUrl.includes("?") ? "&" : "?";
+    const videoUrl = `${baseUrl}${separator}key=${streamKey}`;
+    return { id, video: videoUrl };
+  });
+
+  console.log("Video feeds:", feeds, feedUrls);
+  
 
   return (
     <div
@@ -91,11 +129,14 @@ const VideoFeed: FC<VideoFeedProps> = ({ mentionedAppIds }) => {
         pointerEvents: "none",
       }}
     >
-      {map(filteredApps, (app, index) => {
+      {map(feeds, (app, index) => {
         const defaultX =
           editorX + editorWidth * 1.7 + gap + index * (videoWidth + gap);
         const defaultY = editorY + 300;
-        const coords = videoPositions?.get?.(app.id) || { x: defaultX, y: defaultY };
+        const coords = videoPositions?.get?.(app.id) || {
+          x: defaultX,
+          y: defaultY,
+        };
         return (
           <div
             key={app.id}
@@ -120,32 +161,17 @@ const VideoFeed: FC<VideoFeedProps> = ({ mentionedAppIds }) => {
             {app.id !== selectedAppId && (
               <div className="absolute top-0 left-0 w-full h-full bg-black opacity-50" />
             )}
-            <div className="flex flex-col gap-2 cursor-grab">
-              <div className="flex justify-between items-center">{app.info.name} <GoGrabber className="text-lg cursor-grab" /></div>
-              <div
-                style={{
-                  position: "relative",
-                  width: videoWidth,
-                  height: videoHeight,
+            <div key={index} style={{ width: "100%", height: "auto", position: "relative" }}>
+              <img
+                src={app.video}
+                alt={`Emulator Feed ${index + 1}`}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                onLoad={() => {
+                  if (!loadedFeeds.includes(app.id)) {
+                    setLoadedFeeds(prev => [...prev, app.id]);
+                  }
                 }}
-              >
-                <video
-                  ref={(el) => {
-                    videoRefs.current[app.id] = el;
-                  }}
-                  width={videoWidth}
-                  height={videoHeight}
-                  src={app.info.videoUrl}
-                  controls={false}
-                  muted
-                  loop
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    pointerEvents: "auto",
-                  }}
-                />
-              </div>
+              />
             </div>
           </div>
         );
